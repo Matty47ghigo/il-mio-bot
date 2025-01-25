@@ -1,0 +1,26 @@
+{
+  "name": "il-mio-bot",
+  "version": "1.2.0",
+  "description": "Un semplice discord bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Matty47ghigo/il-mio-bot.git"
+  },
+  "author": "Matty47ghigo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Matty47ghigo/il-mio-bot/issues"
+  },
+  "homepage": "https://github.com/Matty47ghigo/il-mio-bot#readme",
+  "dependencies": {
+    "discord.js": "^14.17.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "eslint": "^9.19.0"
+  }
+}
