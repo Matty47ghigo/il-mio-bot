@@ -1,9 +1,11 @@
 # Node.js modules
 node_modules/
 
-# Environment variables
-.env
-
+# Environment variables and configuration files
+config.json
+commands/gestione_del_bot/
+commands/gestione_del_bot/riavvia.js
+commands/gestione_del_bot/addcommand.js
 # Logs
 logs
 *.log
