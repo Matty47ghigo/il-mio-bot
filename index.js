@@ -8,6 +8,7 @@ client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(commandsPath);
 
+// Carica i file dei comandi
 for (const folder of commandFolders) {
     const folderPath = path.join(commandsPath, folder);
     const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
@@ -21,6 +22,20 @@ for (const folder of commandFolders) {
         } else {
             console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
         }
+    }
+}
+
+const eventsPath = path.join(__dirname, 'events');
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+
+// Carica i file degli eventi
+for (const file of eventFiles) {
+    const filePath = path.join(eventsPath, file);
+    const event = require(filePath);
+    if (event.once) {
+        client.once(event.name, (...args) => event.execute(...args));
+    } else {
+        client.on(event.name, (...args) => event.execute(...args));
     }
 }
 
