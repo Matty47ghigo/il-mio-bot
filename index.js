@@ -1,4 +1,3 @@
-console.log("Preparo il bot...");
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, GatewayIntentBits, Collection, ActivityType } = require('discord.js');
@@ -56,24 +55,6 @@ const client = new Client({
     ],
 });
 
-const express = require('express'); // Importa express
-const { Client, Events, GatewayIntentBits, ActivityType, Collection } = require('discord.js');
-const { token } = require('./config.json');
-
-// Configurazione del server Express per il keep-alive
-const app = express();
-const port = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-    res.send('Il bot è attivo!');
-});
-
-app.listen(port, () => {
-    console.log(`Server HTTP in esecuzione su http://localhost:${port}`);
-});
-
-// Configurazione del client Discord
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 
 // Caricamento dei comandi
