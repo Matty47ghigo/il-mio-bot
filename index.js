@@ -4,9 +4,12 @@ const { Client, GatewayIntentBits, Collection, ActivityType } = require('discord
 const { token } = require('./config.json'); // Carica il token dal file config.json
 const auth = require('./auth.json'); // Carica email e password dal file auth.json
 const readline = require('readline');
+const { exec } = require('child_process'); // Importa exec per eseguire comandi shell
 
+// Carica i moduli per deploy-commands e keep_alive
 require('./deploy-commands'); // Carica il file deploy-commands.js per registrare i comandi slash
 require('./keep_alive'); // Carica il file keep-alive.js per mantenere attivo il bot
+
 // Crea un'interfaccia readline per gestire l'input della console
 const rl = readline.createInterface({
     input: process.stdin,
@@ -150,6 +153,13 @@ client.on('interactionCreate', async interaction => {
         for (const [commandName, command] of client.commands.entries()) {
             if ('handleTicketFormSubmit' in command) {
                 await command.handleTicketFormSubmit(interaction);
+            }
+        }
+    } else if (interaction.isStringSelectMenu()) {
+        // Gestione del menu a selezione
+        for (const [commandName, command] of client.commands.entries()) {
+            if ('handleSelectMenu' in command && interaction.customId === 'select-menu') {
+                await command.handleSelectMenu(interaction); // Gestione della selezione del menu
             }
         }
     }
