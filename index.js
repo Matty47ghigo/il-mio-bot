@@ -1,43 +1,48 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, GatewayIntentBits, Collection, EmbedBuilder } = require('discord.js');
-const { token } = require('./config.json');
-const { exec } = require('child_process'); // Modulo per eseguire comandi shell
+const { Client, GatewayIntentBits, Collection, ActivityType } = require('discord.js');
+const { token } = require('./config.json'); // Carica il token dal file config.json
+const auth = require('./auth.json'); // Carica email e password dal file auth.json
+const readline = require('readline');
 
-// Avvia il server web per mantenere il bot attivo
-require('./keep_alive');
+require('./deploy-commands'); // Carica il file deploy-commands.js per registrare i comandi slash
+require('./keep_alive'); // Carica il file keep-alive.js per mantenere attivo il bot
+// Crea un'interfaccia readline per gestire l'input della console
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-// Carica i comandi slash
-require('./deploy-commands');
+// Funzione per richiedere il login
+function requestLogin() {
+    return new Promise((resolve, reject) => {
+        console.log('Benvenuto! Effettua il login per avviare il bot.');
 
-// Funzione per riavviare il bot
-function restartBot() {
-    console.log('Il bot sta riavviando...');
-    exec('node .', (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Errore durante il riavvio: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.error(`Errore standard: ${stderr}`);
-            return;
-        }
-        console.log(`Output: ${stdout}`);
+        // Richiedi l'email
+        rl.question('Email: ', (email) => {
+            if (email !== auth.email) {
+                console.error('Email non valida.');
+                rl.close();
+                reject(new Error('Accesso negato'));
+                return;
+            }
+
+            // Richiedi la password
+            rl.question('Password: ', (password) => {
+                if (password !== auth.password) {
+                    console.error('Password non valida.');
+                    rl.close();
+                    reject(new Error('Accesso negato'));
+                    return;
+                }
+
+                console.log('Login effettuato con successo!');
+                rl.close();
+                resolve(true);
+            });
+        });
     });
 }
-
-// Gestione degli errori globali
-process.on('uncaughtException', (error) => {
-    console.error('Eccezione non catturata:', error);
-    console.error('Riavvio del bot a causa di un errore irreversibile.');
-    restartBot();
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Rifiuto non gestito:', promise, 'Motivo:', reason);
-    console.error('Riavvio del bot a causa di un errore irreversibile.');
-    restartBot();
-});
 
 // Configurazione del client Discord
 const client = new Client({
@@ -46,7 +51,7 @@ const client = new Client({
         GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers, // Necessario per alcune operazioni con i ruoli/membri
+        GatewayIntentBits.GuildMembers,
     ],
 });
 
@@ -87,6 +92,36 @@ for (const file of eventFiles) {
     }
 }
 
+// Imposta periodicamente lo stato del bot
+client.on('ready', () => {
+    console.log(`Bot loggato come ${client.user.tag}!`);
+
+    // Funzione per aggiornare lo stato del bot
+    function updateBotStatus() {
+        const totalUsers = client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0); // Calcola il numero totale di utenti
+        client.user.setActivity(`Tickets | ${totalUsers} utenti`, { type: ActivityType.Watching }); // Imposta lo stato
+    }
+
+    // Aggiorna lo stato ogni 15 minuti
+    setInterval(updateBotStatus, 15 * 60 * 1000);
+
+    // Esegui l'aggiornamento immediatamente al primo avvio
+    updateBotStatus();
+});
+
+// Funzione principale per avviare il bot
+async function startBot() {
+    try {
+        // Richiedi il login
+        await requestLogin();
+
+        // Avvia il bot dopo il login
+        client.login(token);
+    } catch (error) {
+        console.error('Impossibile avviare il bot:', error.message);
+    }
+}
+
 // Gestione delle interazioni
 client.on('interactionCreate', async interaction => {
     if (interaction.isChatInputCommand()) {
@@ -106,7 +141,6 @@ client.on('interactionCreate', async interaction => {
             if ('handleTicketCreation' in command && ['create-ticket-appella-sanzione', 'create-ticket-segna-utente', 'create-ticket-altro-supporto'].includes(interaction.customId)) {
                 await command.handleTicketCreation(interaction); // Gestione della creazione del ticket
             }
-
             if ('closeTicket' in command && interaction.customId === 'close-ticket') {
                 await command.closeTicket(interaction); // Gestione della chiusura del ticket
             }
@@ -122,15 +156,28 @@ client.on('interactionCreate', async interaction => {
 });
 
 // Riavvio Periodico (opzionale)
-// Imposta un intervallo di riavvio periodico (ad esempio, ogni 30 secondi)
-const RESTART_INTERVAL = 60 * 1000; // 30 secondi in millisecondi
+// Imposta un intervallo di riavvio periodico (ad esempio, ogni 60 secondi)
+const RESTART_INTERVAL = 60 * 1000; // 60 secondi in millisecondi
 setInterval(() => {
     console.log('Riavvio periodico del bot...');
     restartBot();
 }, RESTART_INTERVAL);
 
-// Login del bot
-client.login(token);
+// Funzione per riavviare il bot
+function restartBot() {
+    console.log('Il bot sta riavviando...');
+    exec('node .', (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Errore durante il riavvio: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.error(`Errore standard: ${stderr}`);
+            return;
+        }
+        console.log(`Output: ${stdout}`);
+    });
+}
 
 // Arresto pulito del processo quando il bot si riavvia
 process.on('SIGINT', () => {
@@ -138,3 +185,6 @@ process.on('SIGINT', () => {
     client.destroy(); // Distruggi il client Discord
     process.exit(0); // Esci dal processo
 });
+
+// Avvia il bot
+startBot();

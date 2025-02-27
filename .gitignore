@@ -6,6 +6,8 @@ config.json
 commands/gestione_del_bot/
 commands/gestione_del_bot/riavvia.js
 commands/gestione_del_bot/addcommand.js
+data/warnings.json
+auth.json
 # Logs
 logs
 *.log
